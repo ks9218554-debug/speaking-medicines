@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MedGuard AI — Drug Interaction Checker</title>
+<style>
+:root{
+  --navy:#0F2A3F;
+  --teal:#1C6E7A;
+  --teal-light:#E6F2F1;
+  --paper:#F7F5F0;
+  --ink:#16232B;
+  --amber:#C77A2B;
+  --red:#B23A34;
+  --green:#2E7D5B;
+  --line:#D9D3C4;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;height:100%;}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:'Georgia','Iowan Old Style',serif;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:28px 16px 48px;
+}
+.wrap{width:100%;max-width:640px;}
+header{text-align:left;margin-bottom:22px;border-bottom:2px solid var(--navy);padding-bottom:14px;}
+.brand{display:flex;align-items:baseline;gap:10px;}
+.brand-mark{
+  width:34px;height:34px;border-radius:8px;background:var(--navy);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.brand-mark svg{width:18px;height:18px;}
+h1{font-size:1.5rem;margin:0;color:var(--navy);font-weight:700;letter-spacing:.2px;}
+.tag{font-family:Helvetica,Arial,sans-serif;font-size:.8rem;color:var(--teal);margin:4px 0 0 44px;}
+.sub{font-family:Helvetica,Arial,sans-serif;font-size:.85rem;color:#5b6b70;margin-top:10px;line-height:1.5;}
+
+.panel{
+  background:#fff;border:1px solid var(--line);border-radius:4px;
+  padding:20px;margin-bottom:16px;
+}
+.panel h2{
+  font-family:Helvetica,Arial,sans-serif;font-size:.75rem;font-weight:700;
+  color:var(--navy);text-transform:uppercase;letter-spacing:1px;margin:0 0 14px;
+}
+.drug-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media (max-width:420px){.drug-grid{grid-template-columns:1fr;}}
+.chip{
+  font-family:Helvetica,Arial,sans-serif;font-size:.88rem;
+  border:1px solid var(--line);border-radius:3px;padding:10px 12px;
+  cursor:pointer;background:#fff;color:var(--ink);
+  display:flex;justify-content:space-between;align-items:center;
+  transition:border-color .15s, background .15s;
+}
+.chip:hover{border-color:var(--teal);}
+.chip.on{background:var(--teal-light);border-color:var(--teal);color:var(--navy);font-weight:600;}
+.chip .mark{width:14px;height:14px;border:1.5px solid var(--line);border-radius:3px;flex-shrink:0;}
+.chip.on .mark{background:var(--teal);border-color:var(--teal);}
+
+.patient-row{display:flex;gap:14px;font-family:Helvetica,Arial,sans-serif;font-size:.85rem;flex-wrap:wrap;}
+.field{flex:1;min-width:140px;}
+.field label{display:block;color:#5b6b70;margin-bottom:5px;font-size:.78rem;}
+.field select,.field input{
+  width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:3px;
+  font-family:Helvetica,Arial,sans-serif;font-size:.88rem;background:#fff;
+}
+
+button.analyze{
+  width:100%;padding:14px;background:var(--navy);color:#fff;border:none;border-radius:3px;
+  font-family:Helvetica,Arial,sans-serif;font-size:.95rem;font-weight:600;cursor:pointer;
+  letter-spacing:.3px;transition:background .15s;
+}
+button.analyze:hover{background:#183A54;}
+button.analyze:disabled{background:#9AA5A9;cursor:default;}
+
+.scan{
+  display:none;font-family:Helvetica,Arial,sans-serif;font-size:.82rem;color:var(--teal);
+  text-align:center;padding:18px 0 4px;
+}
+.scan.show{display:block;}
+.scan .bar{height:3px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:10px;}
+.scan .fill{height:100%;width:0%;background:var(--teal);transition:width 1.1s linear;}
+
+.result{display:none;}
+.result.show{display:block;animation:fade .35s ease;}
+@keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+.risk-banner{
+  padding:14px 16px;border-radius:4px;display:flex;align-items:center;gap:12px;margin-bottom:16px;
+  font-family:Helvetica,Arial,sans-serif;
+}
+.risk-banner .dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;}
+.risk-banner .txt strong{display:block;font-size:.95rem;}
+.risk-banner .txt span{font-size:.78rem;opacity:.85;}
+.risk-high{background:#FBEAE8;border:1px solid var(--red);}
+.risk-high .dot{background:var(--red);}
+.risk-high .txt strong{color:var(--red);}
+.risk-mod{background:#FBF0E4;border:1px solid var(--amber);}
+.risk-mod .dot{background:var(--amber);}
+.risk-mod .txt strong{color:var(--amber);}
+.risk-low{background:#E9F5EF;border:1px solid var(--green);}
+.risk-low .dot{background:var(--green);}
+.risk-low .txt strong{color:var(--green);}
+
+.detail{font-family:Helvetica,Arial,sans-serif;font-size:.87rem;line-height:1.6;color:var(--ink);}
+.detail .row{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);}
+.detail .row:last-child{border-bottom:none;}
+.detail .row .k{width:120px;flex-shrink:0;color:#5b6b70;font-size:.78rem;text-transform:uppercase;letter-spacing:.4px;padding-top:2px;}
+.detail .row .v{flex:1;}
+.rec{
+  margin-top:14px;padding:12px 14px;background:var(--teal-light);border-left:3px solid var(--teal);
+  font-family:Helvetica,Arial,sans-serif;font-size:.85rem;color:var(--navy);border-radius:0 3px 3px 0;
+}
+
+footer{margin-top:22px;font-family:Helvetica,Arial,sans-serif;font-size:.72rem;color:#8a9296;text-align:center;line-height:1.6;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L3 6v6c0 5 3.8 8.7 9 10 5.2-1.3 9-5 9-10V6l-9-4z" fill="#fff" opacity="0.95"/><path d="M9 12l2 2 4-4" stroke="#0F2A3F" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <h1>MedGuard AI</h1>
+    </div>
+    <div class="tag">Drug Interaction Prediction — Demo Prototype</div>
+    <p class="sub">Select two or more medicines a patient is taking. The model checks them against known interaction patterns and flags risk before dispensing.</p>
+  </header>
+
+  <div class="panel">
+    <h2>Step 1 — Select Medicines</h2>
+    <div class="drug-grid" id="drugGrid"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Step 2 — Patient Factors (optional)</h2>
+    <div class="patient-row">
+      <div class="field">
+        <label>Age group</label>
+        <select id="age"><option>Adult (18–60)</option><option>Elderly (60+)</option><option>Pediatric</option></select>
+      </div>
+      <div class="field">
+        <label>Kidney function</label>
+        <select id="kidney"><option>Normal</option><option>Impaired</option></select>
+      </div>
+    </div>
+  </div>
+
+  <button class="analyze" id="analyzeBtn">Analyze with AI</button>
+  <div class="scan" id="scanBox">
+    Scanning interaction database…
+    <div class="bar"><div class="fill" id="scanFill"></div></div>
+  </div>
+
+  <div class="result" id="resultBox"></div>
+
+  <footer>Educational prototype for poster presentation · Not for real clinical use · Interaction logic is a simplified rule-based simulation</footer>
+</div>
+
+<script>
+const DRUGS = ["Warfarin","Aspirin","Metformin","Ibuprofen","Amoxicillin","Omeprazole","Atorvastatin","Sertraline"];
+
+const INTERACTIONS = {
+  "Warfarin|Aspirin": {level:"high", effect:"Both drugs reduce clotting ability. Combined use sharply increases bleeding risk, especially GI bleeding.", rec:"Avoid combination if possible. If unavoidable, reduce warfarin dose and monitor INR closely."},
+  "Warfarin|Ibuprofen": {level:"high", effect:"Ibuprofen displaces warfarin from plasma proteins and irritates the GI lining, raising bleeding risk.", rec:"Prefer paracetamol for pain relief. Monitor INR if NSAID use is essential."},
+  "Sertraline|Warfarin": {level:"moderate", effect:"Sertraline can enhance warfarin's blood-thinning effect via metabolic interaction.", rec:"Monitor INR more frequently during co-administration."},
+  "Metformin|Ibuprofen": {level:"moderate", effect:"NSAIDs can reduce kidney function, slowing metformin clearance and raising lactic acidosis risk.", rec:"Use short-term only; check renal function if elderly or already impaired."},
+  "Omeprazole|Atorvastatin": {level:"low", effect:"Minor metabolic overlap. Clinically significant effect is rare in most patients.", rec:"No dose change typically needed; routine monitoring is sufficient."},
+  "Amoxicillin|Warfarin": {level:"moderate", effect:"Antibiotics can alter gut flora that produces vitamin K, occasionally enhancing warfarin effect.", rec:"Monitor INR during and shortly after the antibiotic course."},
+};
+
+function pairKey(a,b){
+  const [x,y] = [a,b].sort();
+  return `${x}|${y}`;
+}
+
+const grid = document.getElementById('drugGrid');
+const selected = new Set();
+DRUGS.forEach(d=>{
+  const el = document.createElement('div');
+  el.className='chip';
+  el.innerHTML = `<span>${d}</span><span class="mark"></span>`;
+  el.onclick = ()=>{
+    if(selected.has(d)){selected.delete(d); el.classList.remove('on');}
+    else{selected.add(d); el.classList.add('on');}
+    document.getElementById('resultBox').classList.remove('show');
+  };
+  grid.appendChild(el);
+});
+
+document.getElementById('analyzeBtn').onclick = ()=>{
+  if(selected.size < 2){
+    alert('Select at least two medicines to check for interactions.');
+    return;
+  }
+  const scanBox = document.getElementById('scanBox');
+  const fill = document.getElementById('scanFill');
+  const resultBox = document.getElementById('resultBox');
+  resultBox.classList.remove('show');
+  scanBox.classList.add('show');
+  fill.style.width='0%';
+  requestAnimationFrame(()=>{ fill.style.width='100%'; });
+
+  setTimeout(()=>{
+    scanBox.classList.remove('show');
+    renderResult();
+    resultBox.classList.add('show');
+  }, 1150);
+};
+
+function renderResult(){
+  const drugs = Array.from(selected);
+  let found = null;
+  for(let i=0;i<drugs.length;i++){
+    for(let j=i+1;j<drugs.length;j++){
+      const key = pairKey(drugs[i],drugs[j]);
+      if(INTERACTIONS[key] && (!found || INTERACTIONS[key].level==='high')){
+        found = {...INTERACTIONS[key], pair:[drugs[i],drugs[j]]};
+        if(found.level==='high') break;
+      }
+    }
+  }
+
+  const age = document.getElementById('age').value;
+  const kidney = document.getElementById('kidney').value;
+  let boosted = false;
+  if(found && kidney==='Impaired' && found.level==='moderate'){ found.level='high'; boosted=true; }
+
+  const box = document.getElementById('resultBox');
+  if(!found){
+    box.innerHTML = `
+      <div class="risk-banner risk-low">
+        <div class="dot"></div>
+        <div class="txt"><strong>No significant interaction detected</strong><span>${drugs.join(' + ')}</span></div>
+      </div>
+      <div class="detail">
+        <div class="row"><div class="k">Checked</div><div class="v">${drugs.length} medicines, ${drugs.length*(drugs.length-1)/2} pair(s)</div></div>
+        <div class="row"><div class="k">Patient</div><div class="v">${age}, kidney function: ${kidney}</div></div>
+      </div>
+      <div class="rec">No dose adjustment predicted for this combination. Continue routine monitoring.</div>
+    `;
+    return;
+  }
+
+  const levelClass = found.level==='high' ? 'risk-high' : found.level==='moderate' ? 'risk-mod' : 'risk-low';
+  const levelLabel = found.level==='high' ? 'High risk interaction' : found.level==='moderate' ? 'Moderate risk interaction' : 'Low risk interaction';
+
+  box.innerHTML = `
+    <div class="risk-banner ${levelClass}">
+      <div class="dot"></div>
+      <div class="txt"><strong>${levelLabel}</strong><span>${found.pair[0]} + ${found.pair[1]}</span></div>
+    </div>
+    <div class="detail">
+      <div class="row"><div class="k">Mechanism</div><div class="v">${found.effect}</div></div>
+      <div class="row"><div class="k">Patient</div><div class="v">${age}, kidney function: ${kidney}${boosted ? ' — risk elevated due to impaired renal clearance' : ''}</div></div>
+    </div>
+    <div class="rec"><strong>AI Recommendation:</strong> ${found.rec}</div>
+  `;
+}
+</script>
+</body>
+</html>
